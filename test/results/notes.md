@@ -10,3 +10,5 @@ Need to try:
 - Mostly read
 - Mostly write
 - All write
+
+Broken tests because there are a ton of bad operations (e.g. PUT on nonexistent). Fix this later. Maybe use different test 

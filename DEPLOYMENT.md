@@ -48,11 +48,9 @@ uvicorn main:app --workers 8
 ### Production Environment
 
 ```bash
-# Calculate optimal workers: (2 × CPU_cores) + 1
-# For most systems, use: 8-16 workers
-
-# Example for 28-core system:
-uvicorn main:app --workers 16
+# Optimized for your hardware: 8 workers
+# Based on benchmark testing on 28-core CPU
+uvicorn main:app --workers 8
 ```
 
 **Characteristics**:
@@ -257,9 +255,9 @@ uvicorn main:app --workers 32
 |---|---|---|---|
 | **Development** | `uvicorn main:app --reload` | 1 | Yes |
 | **Testing** | `uvicorn main:app --workers 8` | 8 | No |
-| **Production** | `uvicorn main:app --workers 16` | 16 | No |
+| **Production** | `uvicorn main:app --workers 8` | 8 | No |
 
-**Key Takeaway**: Always use multiple workers in production. A simple `--workers 16` flag can provide **160x performance improvement** over the default configuration.
+**Key Takeaway**: The optimal worker count for your 28-core machine is **8 workers**. This provides the best balance of throughput (~4,660 req/s), response time (42.51ms), and resource efficiency. See `test/results/2026-02-15_worker_sweet_spot.md` for detailed benchmarking.
 
 ---
 

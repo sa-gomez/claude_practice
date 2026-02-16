@@ -25,9 +25,8 @@ uvicorn main:app --reload
 **For Production/Testing** (optimized performance):
 ```bash
 # Use worker processes for multi-core utilization
-# Recommended: (2 × CPU_cores) + 1
-# Example for 28-core CPU:
-uvicorn main:app --workers 16
+# Optimized for 28-core CPU: 8 workers
+uvicorn main:app --workers 8
 ```
 
 The server will start at `http://localhost:8000`
@@ -38,10 +37,10 @@ Open your browser and navigate to `http://localhost:8000/docs` for interactive A
 ### Performance Notes
 
 - **Development mode** (`--reload`): Single worker, auto-reloads on code changes
-- **Production mode**: Use `--workers N` to utilize multiple CPU cores
+- **Production mode**: Use `--workers 8` for optimal performance
   - Single worker: ~70 req/s
-  - 16 workers: ~10,750 req/s (160x improvement!)
-  - See `test/results/` for detailed performance analysis
+  - 8 workers: ~4,660 req/s (66x improvement!)
+  - See `test/results/` for detailed performance analysis and benchmarks
 
 ## API Endpoints
 

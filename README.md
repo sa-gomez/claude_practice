@@ -1,24 +1,45 @@
 # Simple FastAPI Todo REST API
 
-A simple REST API for managing todos using FastAPI.
+A REST API for managing todos using FastAPI with PostgreSQL database persistence.
 
 ## Setup
 
-### 1. Create and Activate Virtual Environment
+### 1. Start PostgreSQL Database
+
+Using Docker Compose (recommended):
+```bash
+docker-compose up -d
+```
+
+Wait a few seconds for PostgreSQL to start and be ready.
+
+### 2. Create and Activate Virtual Environment
 ```bash
 python3 -m venv claude_practice_venv
 source claude_practice_venv/bin/activate
 ```
 
-### 2. Install Dependencies
+### 3. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Run the Server
+### 4. Initialize Database
+
+The database schema is created automatically on first server start, but you can also manually initialize it:
+```bash
+# Set database URL (optional, uses default if not set)
+export DATABASE_URL="postgresql://todouser:todopass@localhost:5432/todos_db"
+
+# Create tables
+python init_db.py
+```
+
+### 5. Run the Server
 
 **For Development** (with auto-reload):
 ```bash
+# Database URL is set automatically if using default Docker Compose credentials
 uvicorn main:app --reload
 ```
 
@@ -31,16 +52,35 @@ uvicorn main:app --workers 8
 
 The server will start at `http://localhost:8000`
 
-### 4. Access API Documentation
+### 6. Access API Documentation
 Open your browser and navigate to `http://localhost:8000/docs` for interactive API documentation (Swagger UI).
+
+### 7. Stop PostgreSQL (when done)
+```bash
+docker-compose down
+```
+
+To also remove the database volume:
+```bash
+docker-compose down -v
+```
 
 ### Performance Notes
 
 - **Development mode** (`--reload`): Single worker, auto-reloads on code changes
 - **Production mode**: Use `--workers 8` for optimal performance
-  - Single worker: ~70 req/s
-  - 8 workers: ~4,660 req/s (66x improvement!)
+  - Single worker with database: ~400-700 req/s
+  - 8 workers with database: ~2,400-3,800 req/s
+  - Database adds latency compared to in-memory (~10-20% slower) but provides data persistence
   - See `test/results/` for detailed performance analysis and benchmarks
+
+### Database
+
+- **Database**: PostgreSQL 15 (Docker)
+- **ORM**: SQLAlchemy 2.0
+- **Connection Pooling**: Automatic (pool_size=10, max_overflow=20)
+- **Data Persistence**: All todos persist across server restarts
+- **Default Credentials**: User `todouser`, Password `todopass`, Database `todos_db`
 
 ## API Endpoints
 
@@ -138,11 +178,15 @@ requests.delete(f"{BASE_URL}/todos/{todo['id']}")
 ## Features
 
 - ✅ Create, Read, Update, Delete (CRUD) operations
-- ✅ In-memory storage (data resets on server restart)
+- ✅ PostgreSQL database for persistent data storage
+- ✅ SQLAlchemy ORM for database operations
+- ✅ Docker container setup for PostgreSQL
+- ✅ Connection pooling for concurrent requests
 - ✅ Automatic API documentation via FastAPI
 - ✅ Proper error handling (404 for missing todos)
 - ✅ Pydantic data validation
 - ✅ Correct HTTP status codes (201 for create, 204 for delete)
+- ✅ Data persists across server restarts
 
 ## Data Model
 

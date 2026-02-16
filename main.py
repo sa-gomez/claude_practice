@@ -1,15 +1,25 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, List
+from sqlalchemy.orm import Session
+from database import engine, get_db, Base
+from models import Todo as TodoModel
+import models
+
+# Create database tables
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Todo API", description="A simple REST API for managing todos")
 
-# Data model
+# Pydantic models for API validation
 class Todo(BaseModel):
     id: Optional[int] = None
     title: str
     description: Optional[str] = None
     completed: bool = False
+
+    class Config:
+        from_attributes = True
 
 class TodoCreate(BaseModel):
     title: str
@@ -20,69 +30,60 @@ class TodoUpdate(BaseModel):
     description: Optional[str] = None
     completed: Optional[bool] = None
 
-# In-memory storage
-todos: List[dict] = []
-next_id = 1
-
-# Helper function to find todo by ID
-def get_todo_by_id(todo_id: int):
-    for todo in todos:
-        if todo["id"] == todo_id:
-            return todo
-    return None
-
 # Endpoints
 @app.get("/todos", response_model=List[Todo])
-def list_todos():
+def list_todos(db: Session = Depends(get_db)):
     """Get all todos"""
-    return todos
+    return db.query(TodoModel).all()
 
 @app.get("/todos/{todo_id}", response_model=Todo)
-def get_todo(todo_id: int):
+def get_todo(todo_id: int, db: Session = Depends(get_db)):
     """Get a specific todo by ID"""
-    todo = get_todo_by_id(todo_id)
+    todo = db.query(TodoModel).filter(TodoModel.id == todo_id).first()
     if not todo:
         raise HTTPException(status_code=404, detail="Todo not found")
     return todo
 
 @app.post("/todos", response_model=Todo, status_code=201)
-def create_todo(todo_create: TodoCreate):
+def create_todo(todo_create: TodoCreate, db: Session = Depends(get_db)):
     """Create a new todo"""
-    global next_id
-    new_todo = {
-        "id": next_id,
-        "title": todo_create.title,
-        "description": todo_create.description,
-        "completed": False
-    }
-    todos.append(new_todo)
-    next_id += 1
-    return new_todo
+    db_todo = TodoModel(
+        title=todo_create.title,
+        description=todo_create.description,
+        completed=False
+    )
+    db.add(db_todo)
+    db.commit()
+    db.refresh(db_todo)
+    return db_todo
 
 @app.put("/todos/{todo_id}", response_model=Todo)
-def update_todo(todo_id: int, todo_update: TodoUpdate):
+def update_todo(todo_id: int, todo_update: TodoUpdate, db: Session = Depends(get_db)):
     """Update a todo"""
-    todo = get_todo_by_id(todo_id)
+    todo = db.query(TodoModel).filter(TodoModel.id == todo_id).first()
     if not todo:
         raise HTTPException(status_code=404, detail="Todo not found")
 
     if todo_update.title is not None:
-        todo["title"] = todo_update.title
+        todo.title = todo_update.title
     if todo_update.description is not None:
-        todo["description"] = todo_update.description
+        todo.description = todo_update.description
     if todo_update.completed is not None:
-        todo["completed"] = todo_update.completed
+        todo.completed = todo_update.completed
 
+    db.commit()
+    db.refresh(todo)
     return todo
 
 @app.delete("/todos/{todo_id}", status_code=204)
-def delete_todo(todo_id: int):
+def delete_todo(todo_id: int, db: Session = Depends(get_db)):
     """Delete a todo"""
-    todo = get_todo_by_id(todo_id)
+    todo = db.query(TodoModel).filter(TodoModel.id == todo_id).first()
     if not todo:
         raise HTTPException(status_code=404, detail="Todo not found")
 
-    todos.remove(todo)
+    db.delete(todo)
+    db.commit()
     return None
 
 @app.get("/", tags=["Root"])

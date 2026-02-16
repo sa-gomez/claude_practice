@@ -4,20 +4,44 @@ A simple REST API for managing todos using FastAPI.
 
 ## Setup
 
-### 1. Install Dependencies
+### 1. Create and Activate Virtual Environment
+```bash
+python3 -m venv claude_practice_venv
+source claude_practice_venv/bin/activate
+```
+
+### 2. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Run the Server
+### 3. Run the Server
+
+**For Development** (with auto-reload):
 ```bash
 uvicorn main:app --reload
 ```
 
+**For Production/Testing** (optimized performance):
+```bash
+# Use worker processes for multi-core utilization
+# Recommended: (2 × CPU_cores) + 1
+# Example for 28-core CPU:
+uvicorn main:app --workers 16
+```
+
 The server will start at `http://localhost:8000`
 
-### 3. Access API Documentation
+### 4. Access API Documentation
 Open your browser and navigate to `http://localhost:8000/docs` for interactive API documentation (Swagger UI).
+
+### Performance Notes
+
+- **Development mode** (`--reload`): Single worker, auto-reloads on code changes
+- **Production mode**: Use `--workers N` to utilize multiple CPU cores
+  - Single worker: ~70 req/s
+  - 16 workers: ~10,750 req/s (160x improvement!)
+  - See `test/results/` for detailed performance analysis
 
 ## API Endpoints
 

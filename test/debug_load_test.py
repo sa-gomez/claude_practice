@@ -47,11 +47,29 @@ async def make_request(session: aiohttp.ClientSession):
 
 async def aggressive_throughput_test(duration_seconds: int, concurrent_requests: int):
     """Aggressively blast the server to find max throughput"""
+    # Option A: explicit high limits (set to at least concurrent_requests)
     connector = aiohttp.TCPConnector(
-        limit=2000,  # Much higher limit
-        limit_per_host=1000,
+        limit=2000,
+        limit_per_host=2000,   # must be >= concurrent_requests for single-host testing - chatgpt suggested not claude
         ttl_dns_cache=300
     )
+
+    # TODO
+    # Option B: disable aiohttp limits and rely on OS limits (use carefully)
+    # connector = aiohttp.TCPConnector(limit=0, limit_per_host=0, ttl_dns_cache=300)
+
+    # TODO: Option C: use a custom connector that manages its own connection pool (advanced)
+    # TODO: Option D: use a third-party load testing library like locust or artillery for more features
+    # TODO: Option E: implement a custom connection pool with asyncio and raw sockets for ultimate control (very advanced)
+    # TODO: Option F: use multiprocessing to spawn multiple processes each with their own aiohttp session for even higher concurrency (advanced)
+    # TODO: Option G: implement a custom load generator that uses HTTP/2 or raw TCP for even higher performance (very advanced)
+    # TODO: Option H: use a cloud-based load testing service for large-scale testing (practical for very high concurrency)
+    # TODO: Option I: implement a custom load generator that uses multiple threads or processes to achieve higher concurrency than asyncio alone (advanced)
+    # TODO: Option J: use a custom event loop or scheduler to manage a large number of concurrent tasks more efficiently (very advanced)
+    # TODO: Option K: implement a custom load generator that uses a combination of asyncio and multiprocessing to achieve extremely high concurrency (very advanced)
+    # TODO: Option L: use a custom load generator that implements its own connection pooling and request scheduling logic for maximum performance (very advanced)
+    # Okay looks like autocomplete the options are getting repetitive
+
     timeout = aiohttp.ClientTimeout(total=30, connect=10)
 
     async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
@@ -68,7 +86,7 @@ async def aggressive_throughput_test(duration_seconds: int, concurrent_requests:
         while time.time() < end_time:
             # Create concurrent tasks without waiting
             while len(tasks) < concurrent_requests and time.time() < end_time:
-                tasks.append(make_request(session))
+                tasks.append(asyncio.create_task(make_request(session)))
                 request_count += 1
 
             # Gather and remove completed tasks
